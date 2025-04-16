@@ -16,7 +16,7 @@ test_block_number()
 API_KEY = '-'
 
 # Ваш API-ключ от Alchemy
-ALCHEMY_API_KEY = 'O-PSRnhC8gNhe89FOJt-EjD7Vb1tTQbe'
+ALCHEMY_API_KEY = ''
 
 # Данные о сетях с использованием Alchemy
 DATA = {
