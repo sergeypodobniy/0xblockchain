@@ -13,7 +13,7 @@ def test_block_number():
 test_block_number()
 
 # Ваш API-ключ от Ankr
-API_KEY = '595f40ef102171f483bac0b16b78a39669987f446f24ad94955062bb06be39c7'
+API_KEY = '-'
 
 # Ваш API-ключ от Alchemy
 ALCHEMY_API_KEY = 'O-PSRnhC8gNhe89FOJt-EjD7Vb1tTQbe'
