@@ -98,31 +98,6 @@ def check_chat_availability(token, chat_id):
         print(f"Чат или канал с ID {chat_id} {colored('недоступен', 'red')}. Ошибка: {response.text}")
         return False
 
-# Функция для проверки прав бота в чате
-def check_bot_permissions(token, chat_id):
-    url = f'https://api.telegram.org/bot{token}/getChatAdministrators'
-    payload = {
-        'chat_id': chat_id
-    }
-    response = requests.post(url, data=payload)
-    if response.status_code == 200:
-        data = response.json()
-        if data.get('ok'):
-            admins = data.get('result', [])
-            bot_admin = any(admin['user']['is_bot'] and admin['status'] == 'administrator' for admin in admins)
-            if bot_admin:
-                print(f"Бот имеет права администратора в чате с ID {chat_id}.")
-                return True
-            else:
-                print(f"Бот не имеет прав администратора в чате с ID {chat_id}.")
-                return False
-        else:
-            print(f"Ошибка при проверке прав бота в чате с ID {chat_id}: {response.text}")
-            return False
-    else:
-        print(f"Ошибка при проверке прав бота в чате с ID {chat_id}: {response.text}")
-        return False
-
 #----------------------------------#----------------------------------#----------------------------------#----------------------------------#----------------------------------
 
 # Функция для получения цен Биткоина и Эфира
@@ -259,10 +234,10 @@ def job():
 
     available_chats = []
     for chat_id in CHAT_IDS:
-        if check_chat_availability(TELEGRAM_BOT_TOKEN, chat_id) and check_bot_permissions(TELEGRAM_BOT_TOKEN, chat_id):
+        if check_chat_availability(TELEGRAM_BOT_TOKEN, chat_id):
             available_chats.append(chat_id)
         else:
-            print(f"Чат с ID {chat_id} недоступен или бот не имеет прав администратора. Пропускаем.")
+            print(f"Чат с ID {chat_id} недоступен. Пропускаем.")
 
     if not available_chats:
         print("Нет доступных чатов для отправки сообщений.")
@@ -303,7 +278,7 @@ def schedule_job():
     # Планируем задачу
     schedule.every(delay).seconds.do(job)
     # Планируем задачу на следующий день после выполнения текущей
-    schedule.every().day.at("09:51").do(job)
+    schedule.every().day.at("12:00").do(job)
 
 # Настройка планировщика
 schedule_job()
