@@ -1,4 +1,7 @@
 from web3 import Web3
+import os
+from dotenv import load_dotenv
+
 
 def test_block_number():
     url = 'https://rpc.ankr.com/eth/595f40ef102171f483bac0b16b78a39669987f446f24ad94955062bb06be39c7'  # URL string
@@ -12,11 +15,11 @@ def test_block_number():
 # Вызов функции
 test_block_number()
 
-# Ваш API-ключ от Ankr
-API_KEY = '-'
+# Загрузка переменных окружения из файла .env
+load_dotenv()
 
 # Ваш API-ключ от Alchemy
-ALCHEMY_API_KEY = 'O-PSRnhC8gNhe89FOJt-EjD7Vb1tTQbe'
+ALCHEMY_API_KEY = os.getenv('ALCHEMY_API_KEY')
 
 # Данные о сетях с использованием Alchemy
 DATA = {
