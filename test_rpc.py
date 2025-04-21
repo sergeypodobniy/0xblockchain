@@ -13,7 +13,7 @@ def test_block_number():
 test_block_number()
 
 # Ваш API-ключ от Ankr
-API_KEY = '595f40ef102171f483bac0b16b78a39669987f446f24ad94955062bb06be39c7'
+API_KEY = '-'
 
 # Ваш API-ключ от Alchemy
 ALCHEMY_API_KEY = 'O-PSRnhC8gNhe89FOJt-EjD7Vb1tTQbe'
@@ -39,6 +39,72 @@ DATA = {
     'moonriver':    {'rpc': 'https://moonriver.public.blastapi.io',                             'scan': 'https://moonriver.moonscan.io/tx',     'token': 'MOVR','chain_id': 1285},
     'linea':        {'rpc': 'https://rpc.linea.build',                                        'scan': 'https://lineascan.build/tx',           'token': 'ETH', 'chain_id': 59144},
     'base':         {'rpc': 'https://mainnet.base.org',                                       'scan': 'https://basescan.org/tx',              'token': 'ETH', 'chain_id': 8453},
+}
+
+def check_rpc_connections(data):
+    failed_connections = []
+
+    for network, info in data.items():
+        rpc_url = info['rpc']
+        try:
+            w3 = Web3(Web3.HTTPProvider(rpc_url))
+            if w3.is_connected():
+                print(f"Successfully connected to {network} ({rpc_url})")
+            else:
+                print(f"Failed to connect to {network} ({rpc_url})")
+                failed_connections.append(network)
+        except Exception as e:
+            print(f"Error connecting to {network} ({rpc_url}): {e}")
+            failed_connections.append(network)
+
+    return failed_connections
+
+# Вызов функции
+if __name__ == "__main__":
+    failed_connections = check_rpc_connections(DATA)
+    if failed_connections:
+        print("\nFailed to connect to the following networks:")
+        for network in failed_connections:
+            print(f"- {network}")
+    else:
+        print("\nAll RPC connections are successful.")
+
+
+
+# Данные о сетях с использованием Alchemy
+DATA = {
+    'optimism': {
+        'w3': Web3(Web3.HTTPProvider(f'https://opt-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}')),
+        'scan': 'https://optimistic.etherscan.io/tx'
+    },
+    'bsc': {
+        'w3': Web3(Web3.HTTPProvider(f'https://bsc-dataseed.binance.org')),
+        'scan': 'https://bscscan.com/tx'
+    },
+    'polygon': {
+        'w3': Web3(Web3.HTTPProvider(f'https://polygon-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}')),
+        'scan': 'https://polygonscan.com/tx'
+    },
+    'arbitrum': {
+        'w3': Web3(Web3.HTTPProvider(f'https://arb-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}')),
+        'scan': 'https://arbiscan.io/tx'
+    },
+    'avalanche': {
+        'w3': Web3(Web3.HTTPProvider(f'https://api.avax.network/ext/bc/C/rpc')),
+        'scan': 'https://snowtrace.io/tx'
+    },
+    'fantom': {
+        'w3': Web3(Web3.HTTPProvider(f'https://fantom-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}')),
+        'scan': 'https://ftmscan.com/tx'
+    },
+    'gnosis': {
+        'w3': Web3(Web3.HTTPProvider('https://1rpc.io/gnosis')),
+        'scan': 'https://gnosisscan.io/tx'
+    },
+    'celo': {
+        'w3': Web3(Web3.HTTPProvider('https://1rpc.io/celo')),
+        'scan': 'https://celoscan.io/tx'
+    }
 }
 
 def check_rpc_connections(data):
