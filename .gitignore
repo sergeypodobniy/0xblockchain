@@ -2,3 +2,4 @@
 venv/
 seed.xlsx
 wallet/
+Dockerfile

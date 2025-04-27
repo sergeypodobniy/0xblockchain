@@ -1,5 +1,4 @@
 import requests
-import schedule
 import time
 from datetime import datetime, timedelta
 import pytz
@@ -8,18 +7,14 @@ from requests.exceptions import RequestException
 from termcolor import colored
 from decimal import Decimal
 from dotenv import load_dotenv
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, ConversationHandler
 
 # Загрузка переменных окружения из файла .env
 load_dotenv()
 
 # Токен вашего бота
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-# Список ID ваших каналов или чатов
-CHAT_IDS_STR = os.getenv('CHAT_IDS')
-if CHAT_IDS_STR:
-    CHAT_IDS = [chat_id.strip() for chat_id in CHAT_IDS_STR.split(',') if chat_id.strip()]
-else:
-    CHAT_IDS = []
 # Ваш API-ключ от CoinMarketCap
 COINMARKETCAP_API_KEY = os.getenv('COINMARKETCAP_API_KEY')
 # Ваш API-ключ от Etherscan
@@ -83,22 +78,6 @@ def check_etherscan_api_key(api_key):
         return False
 
     return False
-
-# Функция для проверки доступности канала или группы
-def check_chat_availability(token, chat_id):
-    url = f'https://api.telegram.org/bot{token}/getChat'
-    payload = {
-        'chat_id': chat_id
-    }
-    response = requests.post(url, data=payload)
-    if response.status_code == 200:
-        print(f"Чат или канал с ID {chat_id} {colored('доступен', 'green')}.")
-        return True
-    else:
-        print(f"Чат или канал с ID {chat_id} {colored('недоступен', 'red')}. Ошибка: {response.text}")
-        return False
-
-#----------------------------------#----------------------------------#----------------------------------#----------------------------------#----------------------------------
 
 # Функция для получения цен Биткоина и Эфира
 def get_crypto_prices(api_key):
@@ -209,39 +188,12 @@ def get_btc_dominance(api_key):
     return None
 
 # Функция для отправки сообщения в Telegram
-def send_message(token, chat_id, text):
-    url = f'https://api.telegram.org/bot{token}/sendMessage'
-    payload = {
-        'chat_id': chat_id,
-        'text': text
-    }
-    response = requests.post(url, data=payload)
-    if response.status_code != 200:
-        print(f"Ошибка при отправке сообщения в чат {chat_id}: {response.text}")
+def send_message(context, chat_id, text):
+    context.bot.send_message(chat_id=chat_id, text=text)
 
-#----------------------------------#----------------------------------#----------------------------------#----------------------------------#----------------------------------
-
-# Основная функция для отправки сообщений
-def job():
-    if not check_telegram_bot_token(TELEGRAM_BOT_TOKEN):
-        return
-
-    if not check_coinmarketcap_api_key(COINMARKETCAP_API_KEY):
-        return
-
-    if not check_etherscan_api_key(ETHERSCAN_API_KEY):
-        return
-
-    available_chats = []
-    for chat_id in CHAT_IDS:
-        if check_chat_availability(TELEGRAM_BOT_TOKEN, chat_id):
-            available_chats.append(chat_id)
-        else:
-            print(f"Чат с ID {chat_id} недоступен. Пропускаем.")
-
-    if not available_chats:
-        print("Нет доступных чатов для отправки сообщений.")
-        return
+# Функция для обработки команды /get
+def handle_get_command(update, context):
+    chat_id = update.callback_query.message.chat.id if update.callback_query else update.message.chat.id
 
     btc_price, eth_price = get_crypto_prices(COINMARKETCAP_API_KEY)
     gas_price = get_eth_gas_price(ETHERSCAN_API_KEY)
@@ -261,29 +213,70 @@ def job():
                f'{fear_and_greed_info}\n'
                f'Доминирование Биткоина: {btc_dominance}%')
 
-    for chat_id in available_chats:
-        send_message(TELEGRAM_BOT_TOKEN, chat_id, message)
+    send_message(context, chat_id, message)
 
-# Планировщик для выполнения задачи в 12:00 по московскому времени
-def schedule_job():
-    # Устанавливаем часовой пояс Москвы
-    moscow_tz = pytz.timezone('Europe/Moscow')
-    # Устанавливаем время выполнения задачи
-    target_time = moscow_tz.localize(datetime.now()).replace(hour=12, minute=0, second=0, microsecond=0)
-    # Если текущее время больше целевого, планируем на следующий день
-    if datetime.now(moscow_tz) > target_time:
-        target_time += timedelta(days=1)
-    # Вычисляем задержку до целевого времени
-    delay = (target_time - datetime.now(moscow_tz)).total_seconds()
-    # Планируем задачу
-    schedule.every(delay).seconds.do(job)
-    # Планируем задачу на следующий день после выполнения текущей
-    schedule.every().day.at("17:22").do(job)
+# Функция для обработки нажатия на кнопку
+def button(update, context):
+    query = update.callback_query
+    query.answer()
+    handle_get_command(update, context)
 
-# Настройка планировщика
-schedule_job()
+# Функция для обработки команды /start
+def start(update, context):
+    keyboard = [
+        [InlineKeyboardButton("Получить информацию", callback_data='get_info')],
+        [InlineKeyboardButton("Ввод криптовалюты", callback_data='input_crypto')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Выберите действие:', reply_markup=reply_markup)
 
-# Бесконечный цикл для выполнения задач
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+# Функция для обработки ввода криптовалюты
+def input_crypto(update, context):
+    context.bot.send_message(chat_id=update.callback_query.message.chat.id, text="Введите название криптовалюты (например, BTC или ETH):")
+    return "WAITING_CRYPTO"
+
+# Функция для получения курса криптовалюты
+def get_crypto_price(update, context):
+    crypto_name = update.message.text.upper()
+    try:
+        url = f'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={crypto_name}'
+        headers = {
+            'Accepts': 'application/json',
+            'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
+        }
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        if crypto_name in data['data']:
+            price = data['data'][crypto_name]['quote']['USD']['price']
+            message = f"Текущий курс {crypto_name}: ${price}"
+        else:
+            message = f"Криптовалюта {crypto_name} не найдена."
+    except Exception as e:
+        message = f"Произошла ошибка при получении курса криптовалюты: {str(e)}"
+
+    send_message(context, update.message.chat.id, message)
+    return ConversationHandler.END
+
+# Основная функция для запуска бота
+def main():
+    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CallbackQueryHandler(button, pattern='get_info'))
+
+    conv_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(input_crypto, pattern='input_crypto')],
+        states={
+            "WAITING_CRYPTO": [MessageHandler(Filters.text & ~Filters.command, get_crypto_price)]
+        },
+        fallbacks=[],
+    )
+
+    dp.add_handler(conv_handler)
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == "__main__":
+    main()

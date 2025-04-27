@@ -22,4 +22,6 @@ schedule
 pytz
 termcolor
 python-dotenv
+telegram
+telegram.ex
 
