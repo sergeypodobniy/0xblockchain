@@ -1,0 +1,32 @@
+# Секретные файлы
+.env
+.env.local
+.env.production
+.env.staging
+
+# Виртуальное окружение
+venv/
+env/
+.venv/
+
+# Файлы с кошельками и приватными ключами
+wallet/
+seed.xlsx
+*.xlsx
+*.csv
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
+logs/
+
+# Временные файлы
+*.tmp
+*.temp
+
+# Docker
+Dockerfile
+docker-compose.yml
